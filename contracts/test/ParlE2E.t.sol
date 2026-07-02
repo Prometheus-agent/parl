@@ -326,9 +326,118 @@ contract ParlE2E is Test {
         engine.claim(marketId);
     }
 
-    /* ───── 10. Factory withdraw fees ───── */
+    /* ───── 10. Bet on different outcome → revert ───── */
 
-    function test_12_FactoryWithdrawFees() public {
+    function test_12_RevertDifferentOutcome() public {
+        _createMarket();
+
+        vm.prank(bettor1);
+        engine.placeBet{value: 1 ether}(marketId, 0); // Yes
+
+        // Same user tries to bet on No — should revert
+        vm.prank(bettor1);
+        vm.expectRevert("PoolEngine: already bet on different outcome");
+        engine.placeBet{value: 1 ether}(marketId, 1);
+
+        // Verify only the first bet counted
+        (uint256 o, uint256 a, bool c) = engine.getUserBet(marketId, bettor1);
+        assertEq(o, 0);
+        assertEq(a, 1 ether);
+    }
+
+    /* ───── 11. Accumulate same outcome ───── */
+
+    function test_13_AccumulateSameOutcome() public {
+        _createMarket();
+
+        vm.prank(bettor1);
+        engine.placeBet{value: 1 ether}(marketId, 0); // Yes, first bet
+
+        vm.prank(bettor1);
+        engine.placeBet{value: 2 ether}(marketId, 0); // Yes, second bet
+
+        // Verify accumulation
+        (uint256 o, uint256 a, bool c) = engine.getUserBet(marketId, bettor1);
+        assertEq(o, 0);
+        assertEq(a, 3 ether);
+        assertEq(engine.getOutcomePool(marketId, 0), 3 ether);
+    }
+
+    /* ───── 12. Zero bet revert ───── */
+
+    function test_14_RevertZeroBet() public {
+        _createMarket();
+
+        vm.prank(bettor1);
+        vm.expectRevert("PoolEngine: zero bet");
+        engine.placeBet{value: 0}(marketId, 0);
+    }
+
+    /* ───── 13. Invalid outcome revert ───── */
+
+    function test_15_RevertInvalidOutcome() public {
+        _createMarket();
+
+        vm.prank(bettor1);
+        vm.expectRevert("PoolEngine: invalid outcome");
+        engine.placeBet{value: 1 ether}(marketId, 999);
+    }
+
+    /* ───── 14. Cancel market (no refunds MVP) ───── */
+
+    function test_16_CancelMarket() public {
+        _createMarket();
+        _placeBets();
+
+        // Non-owner cannot cancel
+        vm.prank(bettor1);
+        vm.expectRevert("PoolEngine: not owner");
+        engine.cancelMarket(marketId);
+
+        // Owner cancels
+        vm.prank(deployer);
+        engine.cancelMarket(marketId);
+
+        IPoolEngine.MarketState memory state = engine.getMarketState(marketId);
+        assertEq(uint256(state.status), uint256(IPoolEngine.MarketStatus.Canceled));
+
+        // Cannot bet on canceled market
+        vm.prank(bettor1);
+        vm.expectRevert("PoolEngine: market not active");
+        engine.placeBet{value: 1 ether}(marketId, 0);
+
+        // Cannot resolve canceled market (resolver check fires before status)
+        vm.prank(address(oracle));
+        vm.expectRevert("PoolEngine: market not active");
+        engine.resolveMarket(marketId, 0, "");
+
+        // Cannot cancel already-canceled market
+        vm.prank(deployer);
+        vm.expectRevert("PoolEngine: market not active");
+        engine.cancelMarket(marketId);
+    }
+
+    /* ───── 15. Non-existent market revert ───── */
+
+    function test_17_RevertNonExistentMarket() public {
+        bytes32 fakeId = keccak256("does-not-exist");
+
+        vm.expectRevert("PoolEngine: market does not exist");
+        engine.placeBet{value: 1 ether}(fakeId, 0);
+
+        vm.expectRevert("PoolEngine: market does not exist");
+        engine.resolveMarket(fakeId, 0, "");
+
+        vm.expectRevert("PoolEngine: market does not exist");
+        engine.claim(fakeId);
+
+        vm.expectRevert("PoolEngine: market does not exist");
+        engine.cancelMarket(fakeId);
+    }
+
+    /* ───── 16. Factory withdraw fees ───── */
+
+    function test_18_FactoryWithdrawFees() public {
         _createMarket();
         // Create another market for more fees
         bytes32 id2 = keccak256("market-2");
@@ -353,6 +462,229 @@ contract ParlE2E is Test {
         factory.withdrawFees(payable(deployer));
         assertEq(deployer.balance - deployerBalBefore, 0.02 ether);
         assertEq(address(factory).balance, 0);
+    }
+
+    /* ───── 17. Direct PoolEngine.createMarket (permissionless) ───── */
+
+    function test_19_DirectCreateMarket() public {
+        // Anyone can call PoolEngine.createMarket directly without going through Factory
+        bytes32 id = keccak256("direct-poolengine");
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "Head";
+        outcomes[1] = "Tail";
+
+        vm.prank(bettor1);
+        engine.createMarket(id, outcomes, address(oracle), 200);
+
+        IPoolEngine.MarketState memory state = engine.getMarketState(id);
+        assertEq(uint256(state.status), uint256(IPoolEngine.MarketStatus.Active));
+        assertEq(state.config.resolver, address(oracle));
+    }
+
+    /* ───── 18. Resolver can't resolve wrong outcome ───── */
+
+    function test_20_RevertResolveInvalidOutcome() public {
+        _createMarket();
+
+        vm.prank(proposer);
+        oracle.propose{value: 0.1 ether}(marketId, 0, 1000, "");
+
+        // OnlyPoolEngine checks outcome validity — resolveMarket will revert via onlyResolver
+        // Actually the resolver guard will catch it since proposer is not the resolver.
+        // Use direct resolve with the factory market that uses oracle as resolver:
+        vm.prank(address(oracle));
+        vm.expectRevert("PoolEngine: invalid outcome");
+        engine.resolveMarket(marketId, 999, "");
+    }
+
+    /* ───── 19. Pool engine fee stuck — verify fee accumulates ───── */
+
+    function test_21_FeeAccumulates() public {
+        // The protocol fee (2%) stays in PoolEngine after claims
+        uint256 engineBalBefore = address(engine).balance;
+
+        _createMarket();
+        _placeBets();
+
+        vm.prank(proposer);
+        oracle.propose{value: 0.1 ether}(marketId, 0, 1000, "");
+
+        vm.warp(block.timestamp + 1001);
+        vm.roll(block.number + 1001);
+
+        vm.prank(proposer);
+        oracle.executeResolution(marketId);
+
+        // Bettor1 claims
+        vm.prank(bettor1);
+        engine.claim(marketId);
+
+        // Total in: 0.01 (factory) + 4 (bets) = 4.01 ETH
+        // Total out: 3.92 (payout to bettor1)
+        // Fee left in engine: 4 - 3.92 = 0.08 ETH (2% of pool)
+        uint256 engineBalAfter = address(engine).balance;
+        assertEq(engineBalAfter - engineBalBefore, 0.08 ether);
+
+        // accumulatedFees tracking
+        assertEq(engine.accumulatedFees(), 0.08 ether);
+    }
+
+    /* ───── 20. withdrawProtocolFees ───── */
+
+    function test_22_WithdrawProtocolFees() public {
+        test_21_FeeAccumulates(); // resolve + claim, 0.08 ETH accumulated
+
+        // Non-owner can't withdraw
+        vm.prank(bettor1);
+        vm.expectRevert("PoolEngine: not owner");
+        engine.withdrawProtocolFees(payable(bettor1));
+
+        // Owner withdraws
+        uint256 balBefore = deployer.balance;
+        uint256 engineBalBefore = address(engine).balance;
+
+        vm.prank(deployer);
+        engine.withdrawProtocolFees(payable(deployer));
+
+        assertEq(deployer.balance - balBefore, 0.08 ether);
+        assertEq(address(engine).balance, engineBalBefore - 0.08 ether);
+        assertEq(engine.accumulatedFees(), 0);
+
+        // Cannot withdraw again (no fees)
+        vm.prank(deployer);
+        vm.expectRevert("PoolEngine: no fees");
+        engine.withdrawProtocolFees(payable(deployer));
+    }
+
+    /* ───── 21. Fee tracking across multiple markets ───── */
+
+    function test_23_MultiMarketFees() public {
+        // Market 1
+        _createMarket();
+        _placeBets();
+
+        // Market 2
+        bytes32 id2 = keccak256("market-2");
+        string[] memory o2 = new string[](2);
+        o2[0] = "Up";
+        o2[1] = "Down";
+        vm.prank(deployer);
+        factory.createMarket{value: 0.01 ether}(id2, o2, address(oracle), 300); // 3% fee
+
+        vm.prank(bettor1);
+        engine.placeBet{value: 2 ether}(id2, 0);
+
+        // Resolve market 1 via oracle
+        vm.prank(proposer);
+        oracle.propose{value: 0.1 ether}(marketId, 0, 1000, "");
+        vm.warp(block.timestamp + 1001);
+        vm.roll(block.number + 1001);
+        vm.prank(proposer);
+        oracle.executeResolution(marketId);
+
+        // Resolve market 2 via direct resolver (caller is oracle = resolver)
+        vm.prank(address(oracle));
+        engine.resolveMarket(id2, 0, "");
+
+        // Claim both
+        vm.prank(bettor1);
+        engine.claim(marketId);
+
+        vm.prank(bettor1);
+        engine.claim(id2);
+
+        // Market 1: 4 ETH pool, 2% fee = 0.08 ETH
+        // Market 2: 2 ETH pool (single bettor), 3% fee = 0.06 ETH
+        // Total accumulated: 0.14 ETH
+        assertEq(engine.accumulatedFees(), 0.14 ether);
+
+        // Withdraw all
+        vm.prank(deployer);
+        engine.withdrawProtocolFees(payable(deployer));
+        assertEq(engine.accumulatedFees(), 0);
+    }
+
+    /* ───── 22. ParlOracle getProposal edge cases ───── */
+
+    function test_24_ProposalEdgeCases() public {
+        _createMarket();
+
+        // Empty proposal returns default
+        IParlOracle.Proposal memory p = oracle.getProposal(keccak256("no-proposal"));
+        assertEq(p.proposer, address(0));
+        assertFalse(p.resolved);
+        assertFalse(p.disputed);
+
+        // Propose with excess bond
+        vm.prank(proposer);
+        oracle.propose{value: 1 ether}(marketId, 0, 1000, ""); // 1 ETH bond
+
+        IParlOracle.Proposal memory p2 = oracle.getProposal(marketId);
+        assertEq(p2.bond, 1 ether);
+
+        // Already proposed
+        vm.prank(proposer);
+        vm.expectRevert("ParlOracle: already proposed");
+        oracle.propose{value: 0.1 ether}(marketId, 1, 1000, "");
+    }
+
+    /* ───── 23. Oracle: dispute before propose revert ───── */
+
+    function test_25_DisputeWithoutProposal() public {
+        vm.expectRevert("ParlOracle: no proposal");
+        oracle.dispute{value: 0.1 ether}(keccak256("nothing"));
+    }
+
+    /* ───── 24. Oracle: window expired before dispute ───── */
+
+    function test_26_DisputeAfterWindow() public {
+        _createMarket();
+
+        vm.prank(proposer);
+        oracle.propose{value: 0.1 ether}(marketId, 0, 100, "");
+
+        vm.warp(block.timestamp + 101);
+        vm.roll(block.number + 101);
+
+        vm.prank(disputer);
+        vm.expectRevert("ParlOracle: window expired");
+        oracle.dispute{value: 0.1 ether}(marketId);
+    }
+
+    /* ───── 25. Oracle: bond too low ───── */
+
+    function test_27_RevertBondTooLow() public {
+        _createMarket();
+
+        vm.prank(proposer);
+        vm.expectRevert("ParlOracle: bond too low");
+        oracle.propose{value: 0.01 ether}(marketId, 0, 1000, "");
+    }
+
+    /* ───── 26. Factory: insufficient creation fee ───── */
+
+    function test_28_RevertInsufficientCreationFee() public {
+        string[] memory outcomes = new string[](2);
+        outcomes[0] = "A";
+        outcomes[1] = "B";
+
+        vm.prank(deployer);
+        vm.expectRevert(abi.encodeWithSignature("InsufficientFee(uint256,uint256)", 0.01 ether, 0.001 ether));
+        factory.createMarket{value: 0.001 ether}(keccak256("no-fee"), outcomes, address(oracle), 200);
+    }
+
+    /* ───── 27. Factory: setCreationFee ───── */
+
+    function test_29_FactorySetCreationFee() public {
+        // Non-owner
+        vm.prank(bettor1);
+        vm.expectRevert();
+        factory.setCreationFee(0.02 ether);
+
+        // Owner
+        vm.prank(deployer);
+        factory.setCreationFee(0.02 ether);
+        assertEq(factory.creationFee(), 0.02 ether);
     }
 
     /* ───── Helpers ───── */

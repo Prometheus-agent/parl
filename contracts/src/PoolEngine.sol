@@ -19,6 +19,9 @@ contract PoolEngine is IPoolEngine {
     // marketId => user => BetReceipt
     mapping(bytes32 => mapping(address => BetReceipt)) private _bets;
 
+    // accumulated protocol fees (share of pool fees after claims)
+    uint256 public accumulatedFees;
+
     struct BetReceipt {
         uint256 outcome;
         uint256 amount;
@@ -142,9 +145,11 @@ contract PoolEngine is IPoolEngine {
 
         uint256 payout;
         if (receipt.outcome == state.winningOutcome) {
+            uint256 fee = (state.totalPool * state.config.feeBasisPoints) / 10000;
+            uint256 netPool = state.totalPool - fee;
             uint256 winningPool = _outcomePools[marketId][state.winningOutcome];
-            uint256 netPool = (state.totalPool * (10000 - state.config.feeBasisPoints)) / 10000;
             payout = (receipt.amount * netPool) / winningPool;
+            unchecked { accumulatedFees += fee; }
         }
 
         if (payout > 0) {
@@ -166,6 +171,15 @@ contract PoolEngine is IPoolEngine {
         // Refund logic would iterate over bettors — for MVP, requiring off-chain coordination.
         // In production, a Merkle-tree-based refund mechanism is preferred.
         emit MarketResolved(marketId, type(uint256).max, state.totalPool);
+    }
+
+    /// @inheritdoc IPoolEngine
+    function withdrawProtocolFees(address to) external onlyOwner {
+        uint256 amount = accumulatedFees;
+        require(amount > 0, "PoolEngine: no fees");
+        accumulatedFees = 0;
+        payable(to).transfer(amount);
+        emit ProtocolFeesWithdrawn(to, amount);
     }
 
     /* ───── Views ───── */
@@ -199,8 +213,9 @@ contract PoolEngine is IPoolEngine {
             return 0;
         }
 
+        uint256 fee = (state.totalPool * state.config.feeBasisPoints) / 10000;
+        uint256 netPool = state.totalPool - fee;
         uint256 winningPool = _outcomePools[marketId][state.winningOutcome];
-        uint256 netPool = (state.totalPool * (10000 - state.config.feeBasisPoints)) / 10000;
         return (receipt.amount * netPool) / winningPool;
     }
 }

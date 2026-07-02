@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 interface IPoolEngine {
     /* ───── Types ───── */
 
-    enum MarketStatus { Active, Resolving, Resolved, Canceled }
+    enum MarketStatus { Active, Resolved, Canceled }
 
     struct MarketConfig {
         bytes32 marketId;
@@ -31,6 +31,7 @@ interface IPoolEngine {
     event BetPlaced(bytes32 indexed marketId, address indexed bettor, uint256 outcome, uint256 amount);
     event MarketResolved(bytes32 indexed marketId, uint256 winningOutcome, uint256 totalPool);
     event ClaimProcessed(bytes32 indexed marketId, address indexed bettor, uint256 amount);
+    event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
     /* ───── Core ───── */
 
@@ -53,6 +54,9 @@ interface IPoolEngine {
 
     /// @notice Cancel a market and refund all bets
     function cancelMarket(bytes32 marketId) external;
+
+    /// @notice Withdraw accumulated protocol fees (owner only)
+    function withdrawProtocolFees(address to) external;
 
     /* ───── Views ───── */
 
