@@ -34,7 +34,7 @@ contract PoolEngineTest is Test {
 
     function test_RevertCreateDuplicateMarket() public {
         engine.createMarket(marketId, outcomes, resolver, 300);
-        vm.expectRevert("PoolEngine: market already exists");
+        vm.expectRevert("PoolEngine: already exists");
         engine.createMarket(marketId, outcomes, resolver, 300);
     }
 
