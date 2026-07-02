@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const sidebarSections = [
@@ -18,12 +19,9 @@ export default function DocsPage() {
     <div className="min-h-screen bg-black text-white">
       {/* Nav */}
       <nav className="border-b border-white/[0.06] px-6 h-14 flex items-center bg-black/80 backdrop-blur-xl fixed top-0 left-0 right-0 z-50">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow duration-250">
-            P
-          </div>
-          <span className="text-sm font-heading font-semibold">Parl</span>
-          <span className="text-xs text-white/30 ml-1 font-body">/ docs</span>
+        <Link href="/" className="flex items-center group">
+          <Image src="/logo.svg" alt="Parl" width={88} height={22} className="h-[22px] w-auto" priority />
+          <span className="text-xs text-white/30 ml-1.5 font-body">/ docs</span>
         </Link>
         <div className="hidden md:flex ml-auto items-center gap-4">
           <Link href="/app" className="text-xs text-white/40 hover:text-white transition-colors">Markets</Link>
@@ -78,7 +76,7 @@ export default function DocsPage() {
             <div className="flex flex-wrap gap-3 mb-10">
               <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/50">
                 <span className="text-white/70">PoolEngine:</span>{" "}
-                <code className="text-purple-400 font-mono">0x895f...08Ff</code>
+                <code className="text-purple-400 font-mono">0xB3702B...be00</code>
               </div>
               <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/50">
                 <span className="text-white/70">Chain:</span> Avalanche Fuji (43113)
@@ -161,7 +159,7 @@ export default function DocsPage() {
               <h3 className="text-sm font-medium text-white mt-6">PoolEngine</h3>
               <div className="bg-black rounded-lg p-4 font-mono text-xs border border-white/[0.06]">
                 <span className="text-purple-400">address</span> PoolEngine ={" "}
-                <span className="text-emerald-400">0x895f8610Ff8c853541a74fC39c11c657FA920Ff8</span>;
+                <span className="text-emerald-400">0xB3702B20900AE748A68287B75b6065284081be00</span>;
               </div>
 
               <div className="overflow-x-auto">
@@ -194,7 +192,7 @@ export default function DocsPage() {
               <p className="mt-4">
                 Verified on Snowscan:{" "}
                 <a
-                  href="https://testnet.snowscan.xyz/address/0x895f8610Ff8c853541a74fC39c11c657FA920Ff8"
+                  href="https://testnet.snowscan.xyz/address/0xB3702B20900AE748A68287B75b6065284081be00"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-purple-400 hover:text-purple-300 underline underline-offset-2"
@@ -513,7 +511,7 @@ export default function DocsPage() {
 import { PoolEngineABI } from "./PoolEngineABI";
 
 const poolEngine = new ethers.Contract(
-  "0x895f8610Ff8c853541a74fC39c11c657FA920Ff8",
+  "0xB3702B20900AE748A68287B75b6065284081be00",
   PoolEngineABI,
   signer
 );

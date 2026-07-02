@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const API_BASE = process.env.API_BASE || "http://127.0.0.1:8080";
@@ -138,13 +139,8 @@ export default async function HomePage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow duration-250">
-              P
-            </div>
-            <span className="font-heading text-base font-semibold tracking-tight text-white">
-              Parl
-            </span>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo.svg" alt="Parl" width={100} height={25} className="h-6 w-auto" priority />
           </Link>
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
@@ -372,9 +368,7 @@ export default async function HomePage() {
       <section className="py-24 px-6 border-t border-white/[0.06]">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-purple-500/20">
-              ?
-            </div>
+            <Image src="/logo-icon.svg" alt="" width={32} height={32} className="w-8 h-8" />
             <h2 className="text-lg font-heading font-semibold text-white">
               How Parl Works
             </h2>

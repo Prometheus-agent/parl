@@ -13,7 +13,7 @@ import {
 
 // V2 Contracts (live on Fuji)
 const POOL_ENGINE = "0xb8dadda62f236afc4ca8548f2935c90210b6f8bf";
-const PARL_ORACLE = "0x8f38e370e55f13277bcd9952bf30a8d992d05cd8";
+const PARL_ORACLE = "0xb650C22EB696F68EdB14fFEd62E528E7E1FCbDC2";
 const ORACLE_BOND = parseEther("0.1");
 
 // ─── Low-level helpers ───

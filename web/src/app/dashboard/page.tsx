@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { WalletButton } from "@/lib/wallet-button";
 import { useWallet } from "@/lib/wallet-context";
@@ -147,10 +148,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <nav className="border-b border-white/[0.06] px-6 h-14 flex items-center justify-between bg-black/80 backdrop-blur-xl fixed top-0 left-0 right-0 z-50">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-purple-500/20">P</div>
-          <span className="text-sm font-heading font-semibold">Parl</span>
-          <span className="text-xs text-white/30 ml-1 font-body">/ dashboard</span>
+        <Link href="/" className="flex items-center group">
+          <Image src="/logo.svg" alt="Parl" width={88} height={22} className="h-[22px] w-auto" priority />
+          <span className="text-xs text-white/30 ml-1.5 font-body">/ dashboard</span>
         </Link>
         <div className="hidden md:flex items-center gap-4">
           <Link href="/app" className="text-xs text-white/40 hover:text-white transition-colors">Markets</Link>

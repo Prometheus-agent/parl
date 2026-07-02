@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const toc = [
@@ -22,12 +23,9 @@ export default function WhitepaperPage() {
     <div className="min-h-screen bg-black text-white">
       {/* Nav */}
       <nav className="border-b border-white/[0.06] px-6 h-14 flex items-center bg-black/80 backdrop-blur-xl fixed top-0 left-0 right-0 z-50">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow duration-250">
-            P
-          </div>
-          <span className="text-sm font-heading font-semibold">Parl</span>
-          <span className="text-xs text-white/30 ml-1 font-body">/ whitepaper</span>
+        <Link href="/" className="flex items-center group">
+          <Image src="/logo.svg" alt="Parl" width={88} height={22} className="h-[22px] w-auto" priority />
+          <span className="text-xs text-white/30 ml-1.5 font-body">/ whitepaper</span>
         </Link>
         <div className="hidden md:flex ml-auto items-center gap-4">
           <Link href="/app" className="text-xs text-white/40 hover:text-white transition-colors">App</Link>
@@ -272,21 +270,21 @@ export default function WhitepaperPage() {
                 {[
                   {
                     title: "PoolEngine",
-                    addr: "0xb8dadda62f236afc4ca8548f2935c90210b6f8bf",
+                    addr: "0xB3702B20900AE748A68287B75b6065284081be00",
                     desc: "The core parimutuel engine. Handles market state, bet placement, payout calculation, and resolution. In v2, createMarket() is permissionless — any address can create a market. Single contract, no proxies, minimal attack surface.",
                     tag: "Core",
                     color: "purple",
                   },
                   {
                     title: "MarketFactory",
-                    addr: "0x0515a261691c40a71215ac7cb7b69714cdfb4804",
+                    addr: "0x95b38D36D50BcFd4E4c875c640EB1627b48585eC",
                     desc: "Permissionless market creation gateway. Users call createMarket() with a small anti-spam fee (0.01 AVAX). The factory validates inputs, forwards to PoolEngine, and collects fees that can be withdrawn by the protocol owner.",
                     tag: "Gateway",
                     color: "emerald",
                   },
                   {
                     title: "ParlOracle (Optimistic)",
-                    addr: "0x8f38e370e55f13277bcd9952bf30a8d992d05cd8",
+                    addr: "0xb650C22EB696F68EdB14fFEd62E528E7E1FCbDC2",
                     desc: "An optimistic oracle with a challenge window. Anyone can propose an outcome with a bond; anyone can dispute within the window; after the window expires without dispute, the market is resolved. Bonds are slashed on dishonest proposals.",
                     tag: "Oracle",
                     color: "blue",

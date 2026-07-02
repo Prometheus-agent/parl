@@ -30,9 +30,9 @@ Caddy (reverse proxy, SSL) → Next.js (:3000) → API (:8080) ─────�
 
 | Contract | Address | Role |
 |---|---|---|
-| **PoolEngine** | `0xb8dadda62f236afc4ca8548f2935c90210b6f8bf` | Core parimutuel engine |
-| **MarketFactory** | `0x0515a261691c40a71215ac7cb7b69714cdfb4804` | Permissionless creation gateway |
-| **ParlOracle** | `0x8f38e370e55f13277bcd9952bf30a8d992d05cd8` | Optimistic Oracle |
+| **PoolEngine** | `0xB3702B20900AE748A68287B75b6065284081be00` | Core parimutuel engine |
+| **MarketFactory** | `0x95b38D36D50BcFd4E4c875c640EB1627b48585eC` | Permissionless creation gateway |
+| **ParlOracle** | `0xb650C22EB696F68EdB14fFEd62E528E7E1FCbDC2` | Optimistic Oracle |
 
 ## Services
 
