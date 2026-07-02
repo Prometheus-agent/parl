@@ -25,6 +25,7 @@ const FACTORY_ABI = [
     name: "createMarket",
     inputs: [
       { name: "marketId", type: "bytes32" },
+      { name: "description", type: "string" },
       { name: "outcomes", type: "string[]" },
       { name: "resolver", type: "address" },
       { name: "feeBasisPoints", type: "uint256" },
@@ -94,11 +95,11 @@ export default function CreateMarketModal({
         toBytes(question + Date.now())
       );
 
-      // Encode function call
+      // Encode function call with description
       const data = encodeFunctionData({
         abi: FACTORY_ABI,
         functionName: "createMarket",
-        args: [marketId, outcomes, resolver as `0x${string}`, BigInt(fee * 100)],
+        args: [marketId, question, outcomes, resolver as `0x${string}`, BigInt(fee * 100)],
       });
 
       const valueWei = parseEther(CREATION_FEE.toString());

@@ -27,7 +27,7 @@ interface IPoolEngine {
 
     /* ───── Events ───── */
 
-    event MarketCreated(bytes32 indexed marketId, string[] outcomes, address resolver, uint256 feeBasisPoints);
+    event MarketCreated(bytes32 indexed marketId, string description, string[] outcomes, address resolver, uint256 feeBasisPoints);
     event BetPlaced(bytes32 indexed marketId, address indexed bettor, uint256 outcome, uint256 amount);
     event MarketResolved(bytes32 indexed marketId, uint256 winningOutcome, uint256 totalPool);
     event ClaimProcessed(bytes32 indexed marketId, address indexed bettor, uint256 amount);
@@ -38,6 +38,7 @@ interface IPoolEngine {
     /// @notice Create a new prediction market
     function createMarket(
         bytes32 marketId,
+        string calldata description,
         string[] calldata outcomes,
         address resolver,
         uint256 feeBasisPoints

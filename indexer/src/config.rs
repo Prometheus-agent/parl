@@ -7,6 +7,7 @@ pub struct Config {
     pub contract_address: String,
     pub start_block: u64,
     pub poll_interval_ms: u64,
+    pub batch_size: u64,
     pub chain_id: u64,
 }
 
@@ -27,6 +28,10 @@ impl Config {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(2000),
+            batch_size: std::env::var("BATCH_SIZE")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(500),
             chain_id: std::env::var("CHAIN_ID")
                 .ok()
                 .and_then(|v| v.parse().ok())

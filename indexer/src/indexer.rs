@@ -59,7 +59,7 @@ pub async fn run_indexer(pool: PgPool, config: Config) -> anyhow::Result<()> {
         }
 
         // Small batch size to avoid Infura rate limits on free tier
-        let batch_size = std::cmp::min(500u64, current_block - last_block);
+        let batch_size = std::cmp::min(config.batch_size, current_block - last_block);
         let to_block = last_block + batch_size;
 
         let filter = Filter::new()
@@ -246,9 +246,9 @@ async fn handle_market_created(
     sqlx::query(
         r#"
         INSERT INTO markets (market_id, creator, resolver, outcomes, fee_basis_points, status,
-                             dispute_window, total_pool, tx_hash, block_number, chain_id, category)
-        VALUES ($1, $2, $3, $4, $5, 'active', 100, '0', $6, $7, $8, $9)
-        ON CONFLICT (market_id) DO NOTHING
+                             dispute_window, total_pool, tx_hash, block_number, chain_id, category, description)
+        VALUES ($1, $2, $3, $4, $5, 'active', 100, '0', $6, $7, $8, $9, $10)
+        ON CONFLICT (market_id) DO UPDATE SET description = EXCLUDED.description
         "#,
     )
     .bind(h256_to_vec(&ev.market_id))
@@ -260,6 +260,7 @@ async fn handle_market_created(
     .bind(log.block_number.map(|n| n.as_u64() as i64))
     .bind(chain_id as i64)
     .bind(category)
+    .bind(&ev.description)
     .execute(pool)
     .await?;
 

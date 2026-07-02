@@ -23,6 +23,7 @@ contract CreateCryptoMarket is Script {
 
         PoolEngine(poolEngine).createMarket(
             marketId,
+            "Crypto prediction market",
             outcomes,
             parlOracle,
             200  // 2% fee

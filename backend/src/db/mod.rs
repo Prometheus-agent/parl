@@ -21,6 +21,7 @@ pub struct Market {
     pub creator: Vec<u8>,
     pub resolver: Vec<u8>,
     pub outcomes: Vec<String>,
+    pub description: Option<String>,
     pub fee_basis_points: i32,
     pub status: String,
     pub total_pool: String,
@@ -67,6 +68,7 @@ pub struct MarketResponse {
     pub creator: String,
     pub resolver: String,
     pub outcomes: Vec<String>,
+    pub description: Option<String>,
     pub fee_basis_points: i32,
     pub status: String,
     pub total_pool: String,
@@ -90,6 +92,7 @@ impl From<(Market, Vec<f64>, Vec<String>)> for MarketResponse {
             creator: hex_encode(&m.creator),
             resolver: hex_encode(&m.resolver),
             outcomes: m.outcomes,
+            description: m.description.clone(),
             fee_basis_points: m.fee_basis_points,
             status: m.status,
             total_pool: m.total_pool,
@@ -112,6 +115,7 @@ pub struct SimplifiedMarket {
     pub market_id_hex: String,
     pub question: String,
     pub outcomes: Vec<String>,
+    pub description: Option<String>,
     pub status: String,
     pub category: Option<String>,
     pub total_pool_avax: String,
@@ -262,7 +266,7 @@ pub async fn list_markets(
         if let Some(cat) = category_filter {
             sqlx::query_as::<_, Market>(
                 r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                          status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                          description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                           dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
                    FROM markets WHERE status::text = $1 AND category = $2 ORDER BY created_at DESC"#
             )
@@ -273,7 +277,7 @@ pub async fn list_markets(
         } else {
             sqlx::query_as::<_, Market>(
                 r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                          status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                          description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                           dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
                    FROM markets WHERE status::text = $1 ORDER BY created_at DESC"#
             )
@@ -284,7 +288,7 @@ pub async fn list_markets(
     } else if let Some(cat) = category_filter {
         sqlx::query_as::<_, Market>(
             r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                      status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                      description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                       dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
                FROM markets WHERE category = $1 ORDER BY created_at DESC"#
         )
@@ -294,7 +298,7 @@ pub async fn list_markets(
     } else {
         sqlx::query_as::<_, Market>(
             r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                      status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                      description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                       dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
                FROM markets ORDER BY created_at DESC"#
         )
@@ -314,7 +318,7 @@ pub async fn list_markets(
 pub async fn get_market(pool: &PgPool, id: Uuid) -> Result<Option<Market>, sqlx::Error> {
     sqlx::query_as::<_, Market>(
         r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                  status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                  description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                   dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
            FROM markets WHERE id = $1"#
     )
@@ -326,7 +330,7 @@ pub async fn get_market(pool: &PgPool, id: Uuid) -> Result<Option<Market>, sqlx:
 pub async fn get_market_by_contract_id(pool: &PgPool, market_id: Vec<u8>) -> Result<Option<Market>, sqlx::Error> {
     sqlx::query_as::<_, Market>(
         r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                  status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                  description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                   dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
            FROM markets WHERE market_id = $1"#
     )
@@ -402,7 +406,7 @@ pub async fn list_simplified_markets(
     let markets = if let Some(cat) = category_filter {
         sqlx::query_as::<_, Market>(
             r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                      status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                      description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                       dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
                FROM markets WHERE category = $1 ORDER BY created_at DESC"#
         )
@@ -412,7 +416,7 @@ pub async fn list_simplified_markets(
     } else {
         sqlx::query_as::<_, Market>(
             r#"SELECT id, market_id, creator, resolver, outcomes, fee_basis_points,
-                      status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
+                      description, status::text AS "status", total_pool::text AS "total_pool", winning_outcome,
                       dispute_window, created_at, resolved_at, tx_hash, block_number, chain_id, category
                FROM markets ORDER BY created_at DESC"#
         )
@@ -436,13 +440,14 @@ pub async fn list_simplified_markets(
 
         let pool_avax = pool_amount_to_avax(&m.total_pool);
         let vol_avax = pool_amount_to_avax(&volume.unwrap_or_else(|| "0".to_string()));
-        let question = m.outcomes.join(" | ");
+        let question = m.description.clone().unwrap_or_else(|| m.outcomes.join(" | "));
 
         result.push(SimplifiedMarket {
             id: m.id,
             market_id_hex: hex_encode(&m.market_id),
             question,
             outcomes: m.outcomes,
+            description: m.description.clone(),
             status: m.status,
             category: m.category,
             total_pool_avax: pool_avax,

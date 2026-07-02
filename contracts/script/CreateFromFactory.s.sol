@@ -20,7 +20,7 @@ contract CreateFromFactory is Script {
             string[] memory o1 = new string[](2);
             o1[0] = "Yes - BTC exceeds 100k";
             o1[1] = "No - BTC stays below 100k";
-            MarketFactory(factory).createMarket{value: 0.01 ether}(mId1, o1, oracle, 200);
+            MarketFactory(factory).createMarket{value: 0.01 ether}(mId1, "Will BTC exceed 100k?", o1, oracle, 200);
             console.log("Crypto market: 0x%x", uint256(mId1));
         }
 
@@ -30,7 +30,7 @@ contract CreateFromFactory is Script {
             string[] memory o2 = new string[](2);
             o2[0] = "Lakers win NBA Finals";
             o2[1] = "Celtics win NBA Finals";
-            MarketFactory(factory).createMarket{value: 0.01 ether}(mId2, o2, oracle, 200);
+            MarketFactory(factory).createMarket{value: 0.01 ether}(mId2, "NBA Finals winner?", o2, oracle, 200);
             console.log("Sports market: 0x%x", uint256(mId2));
         }
 
@@ -40,7 +40,7 @@ contract CreateFromFactory is Script {
             string[] memory o3 = new string[](2);
             o3[0] = "Party A wins election";
             o3[1] = "Party B wins election";
-            MarketFactory(factory).createMarket{value: 0.01 ether}(mId3, o3, oracle, 200);
+            MarketFactory(factory).createMarket{value: 0.01 ether}(mId3, "Who wins the election?", o3, oracle, 200);
             console.log("Politics market: 0x%x", uint256(mId3));
         }
 

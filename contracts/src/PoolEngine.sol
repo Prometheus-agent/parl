@@ -67,6 +67,7 @@ contract PoolEngine is IPoolEngine {
     /// @inheritdoc IPoolEngine
     function createMarket(
         bytes32 marketId,
+        string calldata description,
         string[] calldata outcomes,
         address resolver,
         uint256 feeBasisPoints
@@ -89,7 +90,7 @@ contract PoolEngine is IPoolEngine {
 
         _markets[marketId].status = MarketStatus.Active;
 
-        emit MarketCreated(marketId, outcomes, resolver, feeBasisPoints);
+        emit MarketCreated(marketId, description, outcomes, resolver, feeBasisPoints);
     }
 
     /// @inheritdoc IPoolEngine

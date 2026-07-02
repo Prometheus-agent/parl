@@ -22,6 +22,7 @@ contract MarketFactory {
     event MarketCreated(
         bytes32 indexed marketId,
         address indexed creator,
+        string description,
         string[] outcomes,
         address resolver,
         uint256 feeBasisPoints
@@ -59,6 +60,7 @@ contract MarketFactory {
     /// @param feeBasisPoints Protocol fee (100–500 = 1%–5%)
     function createMarket(
         bytes32 marketId,
+        string calldata description,
         string[] calldata outcomes,
         address resolver,
         uint256 feeBasisPoints
@@ -68,10 +70,10 @@ contract MarketFactory {
         }
 
         // Forward to PoolEngine
-        poolEngine.createMarket(marketId, outcomes, resolver, feeBasisPoints);
+        poolEngine.createMarket(marketId, description, outcomes, resolver, feeBasisPoints);
 
         marketCreator[marketId] = msg.sender;
-        emit MarketCreated(marketId, msg.sender, outcomes, resolver, feeBasisPoints);
+        emit MarketCreated(marketId, msg.sender, description, outcomes, resolver, feeBasisPoints);
 
         // Refund excess
         if (msg.value > creationFee) {

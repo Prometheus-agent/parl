@@ -23,6 +23,7 @@ contract CreateSportsMarket is Script {
 
         PoolEngine(poolEngine).createMarket(
             marketId,
+            "NBA Finals 2026 winner?",
             outcomes,
             parlOracle,
             200

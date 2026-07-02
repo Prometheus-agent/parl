@@ -61,7 +61,7 @@ contract ParlE2E is Test {
         outcomes[1] = "No";
 
         vm.prank(deployer);
-        factory.createMarket{value: 0.01 ether}(marketId, outcomes, address(oracle), 200);
+        factory.createMarket{value: 0.01 ether}(marketId, "test", outcomes, address(oracle), 200);
 
         // Verify PoolEngine state
         IPoolEngine.MarketState memory state = engine.getMarketState(marketId);
@@ -130,7 +130,7 @@ contract ParlE2E is Test {
 
         vm.prank(deployer);
         vm.expectRevert("PoolEngine: already exists");
-        factory.createMarket{value: 0.01 ether}(marketId, outcomes, address(oracle), 200);
+        factory.createMarket{value: 0.01 ether}(marketId, "test", outcomes, address(oracle), 200);
     }
 
     function test_05_RevertInvalidFee() public {
@@ -143,12 +143,12 @@ contract ParlE2E is Test {
         // Fee too low (0.5%)
         vm.prank(deployer);
         vm.expectRevert("PoolEngine: invalid fee");
-        factory.createMarket{value: 0.01 ether}(id, outcomes, address(oracle), 50);
+        factory.createMarket{value: 0.01 ether}(id, "test", outcomes, address(oracle), 50);
 
         // Fee too high (6%)
         vm.prank(deployer);
         vm.expectRevert("PoolEngine: invalid fee");
-        factory.createMarket{value: 0.01 ether}(id, outcomes, address(oracle), 600);
+        factory.createMarket{value: 0.01 ether}(id, "test", outcomes, address(oracle), 600);
     }
 
     /* ───── 4. Oracle: Propose → Resolve → Claim (Happy Path) ───── */
@@ -254,7 +254,7 @@ contract ParlE2E is Test {
         outcomes[1] = "B";
 
         vm.prank(deployer);
-        factory.createMarket{value: 0.01 ether}(id, outcomes, altResolver, 200);
+        factory.createMarket{value: 0.01 ether}(id, "test", outcomes, altResolver, 200);
 
         vm.prank(bettor1);
         engine.placeBet{value: 2 ether}(id, 0);
@@ -445,7 +445,7 @@ contract ParlE2E is Test {
         outcomes[0] = "Up";
         outcomes[1] = "Down";
         vm.prank(deployer);
-        factory.createMarket{value: 0.01 ether}(id2, outcomes, address(oracle), 200);
+        factory.createMarket{value: 0.01 ether}(id2, "test", outcomes, address(oracle), 200);
 
         // Factory should have 0.02 AVAX
         uint256 factoryBalance = address(factory).balance;
@@ -474,7 +474,7 @@ contract ParlE2E is Test {
         outcomes[1] = "Tail";
 
         vm.prank(bettor1);
-        engine.createMarket(id, outcomes, address(oracle), 200);
+        engine.createMarket(id, "test", outcomes, address(oracle), 200);
 
         IPoolEngine.MarketState memory state = engine.getMarketState(id);
         assertEq(uint256(state.status), uint256(IPoolEngine.MarketStatus.Active));
@@ -569,7 +569,7 @@ contract ParlE2E is Test {
         o2[0] = "Up";
         o2[1] = "Down";
         vm.prank(deployer);
-        factory.createMarket{value: 0.01 ether}(id2, o2, address(oracle), 300); // 3% fee
+        factory.createMarket{value: 0.01 ether}(id2, "test", o2, address(oracle), 300); // 3% fee
 
         vm.prank(bettor1);
         engine.placeBet{value: 2 ether}(id2, 0);
@@ -670,7 +670,7 @@ contract ParlE2E is Test {
 
         vm.prank(deployer);
         vm.expectRevert(abi.encodeWithSignature("InsufficientFee(uint256,uint256)", 0.01 ether, 0.001 ether));
-        factory.createMarket{value: 0.001 ether}(keccak256("no-fee"), outcomes, address(oracle), 200);
+        factory.createMarket{value: 0.001 ether}(keccak256("no-fee"), "test", outcomes, address(oracle), 200);
     }
 
     /* ───── 27. Factory: setCreationFee ───── */
@@ -695,7 +695,7 @@ contract ParlE2E is Test {
         outcomes[1] = "No";
 
         vm.prank(deployer);
-        factory.createMarket{value: 0.01 ether}(marketId, outcomes, address(oracle), 200);
+        factory.createMarket{value: 0.01 ether}(marketId, "test", outcomes, address(oracle), 200);
     }
 
     function _placeBets() internal {

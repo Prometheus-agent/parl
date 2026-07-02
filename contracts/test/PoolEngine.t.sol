@@ -25,7 +25,7 @@ contract PoolEngineTest is Test {
     }
 
     function test_CreateMarket() public {
-        engine.createMarket(marketId, outcomes, resolver, 300);
+        engine.createMarket(marketId, "test", outcomes, resolver, 300);
         IPoolEngine.MarketState memory state = engine.getMarketState(marketId);
         assertEq(uint256(state.status), uint256(IPoolEngine.MarketStatus.Active));
         assertEq(state.config.outcomes.length, 3);
@@ -33,13 +33,13 @@ contract PoolEngineTest is Test {
     }
 
     function test_RevertCreateDuplicateMarket() public {
-        engine.createMarket(marketId, outcomes, resolver, 300);
+        engine.createMarket(marketId, "test", outcomes, resolver, 300);
         vm.expectRevert("PoolEngine: already exists");
-        engine.createMarket(marketId, outcomes, resolver, 300);
+        engine.createMarket(marketId, "test", outcomes, resolver, 300);
     }
 
     function test_PlaceBet() public {
-        engine.createMarket(marketId, outcomes, resolver, 300);
+        engine.createMarket(marketId, "test", outcomes, resolver, 300);
 
         vm.prank(bettor1);
         engine.placeBet{value: 1 ether}(marketId, 0);
@@ -51,7 +51,7 @@ contract PoolEngineTest is Test {
     }
 
     function test_ResolveAndClaim() public {
-        engine.createMarket(marketId, outcomes, resolver, 300);
+        engine.createMarket(marketId, "test", outcomes, resolver, 300);
 
         // Bettor1 bets on Team A (0), Bettor2 bets on Team B (1)
         vm.prank(bettor1);
@@ -76,7 +76,7 @@ contract PoolEngineTest is Test {
     }
 
     function test_RevertBetOnResolvedMarket() public {
-        engine.createMarket(marketId, outcomes, resolver, 300);
+        engine.createMarket(marketId, "test", outcomes, resolver, 300);
 
         vm.prank(bettor1);
         engine.placeBet{value: 1 ether}(marketId, 0);
@@ -90,7 +90,7 @@ contract PoolEngineTest is Test {
     }
 
     function test_RevertDoubleClaim() public {
-        engine.createMarket(marketId, outcomes, resolver, 300);
+        engine.createMarket(marketId, "test", outcomes, resolver, 300);
 
         vm.prank(bettor1);
         engine.placeBet{value: 1 ether}(marketId, 0);
@@ -108,9 +108,9 @@ contract PoolEngineTest is Test {
 
     function test_FeeBounds() public {
         vm.expectRevert("PoolEngine: invalid fee");
-        engine.createMarket(marketId, outcomes, resolver, 50);
+        engine.createMarket(marketId, "test", outcomes, resolver, 50);
 
         vm.expectRevert("PoolEngine: invalid fee");
-        engine.createMarket(marketId, outcomes, resolver, 600);
+        engine.createMarket(marketId, "test", outcomes, resolver, 600);
     }
 }

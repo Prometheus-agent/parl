@@ -23,6 +23,7 @@ contract CreateMarket is Script {
 
         PoolEngine(poolEngine).createMarket(
             marketId,
+            unicode"Team A vs Team B \u2014 Match Result",
             outcomes,
             deployer,
             200  // 2% fee

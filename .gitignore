@@ -7,3 +7,6 @@ target/
 *.log
 deployed-address.txt
 .memory/
+
+# Backup files
+*.bak
