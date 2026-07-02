@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* ───── Design Tokens ───── */
+:root {
+  /* Dark mode OLED */
+  --bg-primary: #000000;
+  --bg-secondary: #0A0A0F;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.06);
+
+  /* Brand: Web3 Purple + Gold */
+  --brand-primary: #8B5CF6;
+  --brand-secondary: #A78BFA;
+  --brand-gold: #FBBF24;
+  --brand-gold-dim: rgba(251, 191, 36, 0.15);
+
+  /* Text */
+  --text-primary: #FAFAFA;
+  --text-secondary: rgba(255, 255, 255, 0.5);
+  --text-tertiary: rgba(255, 255, 255, 0.3);
+
+  /* Border */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+
+  /* Glow */
+  --glow-purple: 0 0 20px rgba(139, 92, 246, 0.15);
+  --glow-blue: 0 0 20px rgba(59, 130, 246, 0.12);
+
+  /* Animation */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+
+  /* Spacing */
+  --nav-height: 56px;
+}
+
+/* ───── Theme ───── */
+@theme {
+  --font-heading: "Space Grotesk", sans-serif;
+  --font-body: "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  --color-brand: #8B5CF6;
+  --color-brand-light: #A78BFA;
+  --color-gold: #FBBF24;
+
+  --animate-fade-in: fade-in 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* ───── Base ───── */
+html {
+  scroll-behavior: smooth;
+  background: var(--bg-primary);
+}
+
+body {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: white;
+}
+
+/* ───── Scrollbar ───── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ───── Keyframes ───── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.1); }
+  50%      { box-shadow: 0 0 30px rgba(139, 92, 246, 0.2); }
+}
+
+/* ───── Utilities ───── */
+@utility text-balance {
+  text-wrap: balance;
+}
