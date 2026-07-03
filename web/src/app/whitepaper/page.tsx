@@ -146,7 +146,7 @@ export default function WhitepaperPage() {
               <p>
                 In most prediction market platforms, creating a market requires either
                 platform approval (Polymarket, Kalshi) or significant technical expertise
-                (Augur, Gnosis). This gatekeeping limits the diversity of markets and
+                (custom AMM deployment, orderbook setup). This gatekeeping limits the diversity of markets and
                 slows the platform's ability to react to current events.
               </p>
               <p>

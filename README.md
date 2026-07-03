@@ -18,13 +18,13 @@ No LP tokens. No slippage. No impermanent loss. Pure, pooled speculation.
 
 ### Why Parimutuel?
 
-| Feature | Parl (Parimutuel) | Polymarket (CFMM) | Augur (Orderbook) |
+| Feature | Parl (Parimutuel) | Polymarket (CFMM) | Azuro (LP Pools) |
 |---|---|---|---|
-| Liquidity needed | **None** | Yes (LP pools) | Yes (makers) |
+| Liquidity needed | **None** | Yes (LP pools) | Yes (LP pools) |
 | Slippage | **Zero** | Yes | Yes |
-| Capital efficiency | **Max** | Low (locked LP) | Low |
-| Scalability | **Infinite** | Per-pool caps | Thin books |
-| Complexity | **Low** | Medium | High |
+| Capital efficiency | **Max** | Low (locked LP) | Low (locked LP) |
+| Scalability | **Infinite** | Per-pool caps | Per-pool caps |
+| Complexity | **Low** | Medium | Medium |
 
 ---
 
