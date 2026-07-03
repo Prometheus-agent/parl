@@ -25,24 +25,18 @@ const CATEGORIES = [
   "all", "sports", "crypto", "politics", "weather", "tech", "general",
 ] as const;
 
-const CATEGORY_LABEL: Record<string, string> = {
+const CAT_LABEL: Record<string, string> = {
   all: "All", sports: "Sports", crypto: "Crypto",
   politics: "Politics", weather: "Weather", tech: "Tech", general: "General",
 };
 
-const STATUS_CFG: Record<string, string> = {
-  active: "text-green-500",
-  resolved: "text-blue-500",
-  canceled: "text-neutral-600",
-};
-
-const CAT_COLORS: Record<string, string> = {
-  sports: "bg-green-500/15 text-green-400",
-  crypto: "bg-amber-500/15 text-amber-400",
-  politics: "bg-rose-500/15 text-rose-400",
-  weather: "bg-cyan-500/15 text-cyan-400",
-  tech: "bg-violet-500/15 text-violet-400",
-  general: "bg-neutral-500/15 text-neutral-400",
+const CAT_BADGE: Record<string, string> = {
+  sports: "border-green-800 text-green-400",
+  crypto: "border-amber-800 text-amber-400",
+  politics: "border-rose-800 text-rose-400",
+  weather: "border-cyan-800 text-cyan-400",
+  tech: "border-violet-800 text-violet-400",
+  general: "border-neutral-700 text-neutral-400",
 };
 
 export default function MarketsPage() {
@@ -78,153 +72,155 @@ export default function MarketsPage() {
     : markets;
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
-      {/* ─── Top Bar ─── */}
+    <div className="min-h-screen bg-black text-white">
+      {/* ─── Nav ─── */}
       <div className="border-b border-neutral-800">
-        <div className="max-w-7xl mx-auto px-5 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="text-sm font-semibold tracking-tight">PARL</Link>
-            <span className="text-neutral-600 text-sm">/</span>
-            <span className="text-sm text-neutral-400">markets</span>
+        <div className="max-w-6xl mx-auto px-5 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="font-bold text-sm tracking-wider">PARL</Link>
+            <span className="text-neutral-700">/</span>
+            <span className="text-sm text-neutral-500">markets</span>
           </div>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-5 text-sm">
             {address && (
-              <span className="text-neutral-500 font-mono text-xs">
-                {address.slice(0, 5)}…{address.slice(-3)}
+              <span className="text-neutral-600 font-mono text-xs">
+                {address.slice(0,5)}…{address.slice(-3)}
                 {chainId === 43113 && <span className="text-green-500 ml-1.5">●</span>}
               </span>
             )}
-            <Link href="/dashboard" className="text-neutral-500 hover:text-white transition-colors">dashboard</Link>
-            <Link href="/docs" className="text-neutral-500 hover:text-white transition-colors">docs</Link>
+            <Link href="/dashboard" className="text-neutral-600 hover:text-neutral-300 transition-colors">dashboard</Link>
+            <Link href="/docs" className="text-neutral-600 hover:text-neutral-300 transition-colors">docs</Link>
           </div>
         </div>
       </div>
 
       {/* ─── Body ─── */}
-      <div className="max-w-7xl mx-auto px-5 py-8">
-        {/* Header row */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-6xl mx-auto px-5 py-8">
+        {/* ─── Header ─── */}
+        <div className="flex items-center justify-between mb-7">
           <div>
-            <h1 className="text-lg font-semibold">Markets</h1>
-            <p className="text-sm text-neutral-500 mt-0.5">
-              {loading ? "loading…" : `${markets.length} market${markets.length !== 1 ? "s" : ""}`}
-            </p>
+            <h1 className="text-xl font-semibold">Markets</h1>
+            {!loading && (
+              <p className="text-sm text-neutral-600 mt-0.5">
+                {markets.length > 0
+                  ? `${markets.length} market${markets.length > 1 ? "s" : ""} on Fuji`
+                  : "no markets yet — create the first one"}
+              </p>
+            )}
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="text-sm px-3.5 py-1.5 border border-neutral-700 rounded-md hover:bg-neutral-900 transition-colors text-neutral-300"
+            className="text-sm px-4 py-1.5 border border-neutral-700 rounded hover:bg-neutral-900 transition-colors text-neutral-300"
           >
             + Create
           </button>
         </div>
 
-        {/* Search row */}
-        <div className="flex items-center gap-3 mb-5 flex-wrap">
+        {/* ─── Search + Filters ─── */}
+        <div className="flex items-center gap-3 mb-7">
           <input
             type="text"
             placeholder="search markets…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-64 h-9 px-3 bg-neutral-900 border border-neutral-800 rounded-md text-sm text-white placeholder-neutral-600 outline-none focus:border-neutral-600 transition-colors"
+            className="w-64 h-9 px-3 bg-neutral-900 border border-neutral-800 rounded text-sm text-white placeholder-neutral-700 outline-none focus:border-neutral-600 transition-colors"
           />
-          <nav className="flex items-center gap-1 text-sm">
+          <div className="flex items-center gap-1 text-sm">
             {CATEGORIES.map((c) => (
               <button
                 key={c}
                 onClick={() => { setCat(c); setSearch(""); loadMarkets(c); }}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  cat === c ? "bg-neutral-800 text-white" : "text-neutral-500 hover:text-neutral-300"
+                className={`px-2.5 py-1 rounded transition-colors ${
+                  cat === c
+                    ? "bg-neutral-800 text-white"
+                    : "text-neutral-600 hover:text-neutral-400"
                 }`}
               >
-                {CATEGORY_LABEL[c]}
+                {CAT_LABEL[c]}
               </button>
             ))}
-          </nav>
+          </div>
         </div>
 
-        {/* Loading */}
+        {/* ─── Loading ─── */}
         {loading && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {[1,2,3].map((i) => (
-              <div key={i} className="h-20 bg-neutral-900/50 rounded-md animate-pulse" />
+              <div key={i} className="h-16 bg-neutral-900/30 rounded animate-pulse" />
             ))}
           </div>
         )}
 
-        {/* Error */}
+        {/* ─── Empty ─── */}
         {!loading && results.length === 0 && (
-          <div className="py-16 text-center">
-            <p className="text-sm text-neutral-600">
-              {search ? `no markets matching "${search}"` : "no markets yet"}
+          <div className="text-center py-20">
+            <p className="text-neutral-600 text-sm mb-3">
+              {search ? `nothing for "${search}"` : "zero markets"}
             </p>
             {!search && (
               <button
                 onClick={() => setCreateOpen(true)}
-                className="mt-3 text-sm text-neutral-500 underline underline-offset-4 hover:text-neutral-300 transition-colors"
+                className="text-sm text-neutral-500 underline underline-offset-4 hover:text-neutral-300 transition-colors"
               >
-                create the first one
+                make one
               </button>
             )}
           </div>
         )}
 
-        {/* Market list — compact table */}
+        {/* ─── Market List ─── */}
         {!loading && results.length > 0 && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {results.map((m) => {
-              const pool = parseFloat(m.total_pool_avax);
-              const color = CAT_COLORS[m.category || "general"] || CAT_COLORS.general;
+              const poolNum = parseFloat(m.total_pool_avax);
+              const catColor = CAT_BADGE[m.category || "general"] || CAT_BADGE.general;
               return (
                 <Link
                   key={m.id}
                   href={`/app/${m.market_id_hex}`}
-                  className="block border border-neutral-800 rounded-md px-4 py-3 hover:bg-neutral-900/60 transition-colors"
+                  className="block border border-neutral-800 rounded px-5 py-4 hover:border-neutral-700 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-6">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${color}`}>
+                      {/* Badges */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-[12px] px-2 py-0.5 border rounded ${catColor}`}>
                           {m.category || "general"}
                         </span>
-                        <span className={`text-[11px] ${STATUS_CFG[m.status] || "text-neutral-500"}`}>
+                        <span className={`text-[12px] ${m.status === "active" ? "text-green-500" : m.status === "resolved" ? "text-blue-500" : "text-neutral-600"}`}>
                           {m.status}
                         </span>
-                        {pool === 0 && (
-                          <span className="text-[11px] text-neutral-600">empty pool</span>
-                        )}
                       </div>
-                      <h2 className="text-sm font-medium text-neutral-200 leading-snug">
+                      {/* Question */}
+                      <h2 className="text-sm text-neutral-200 font-medium leading-snug">
                         {m.question}
                       </h2>
                     </div>
 
-                    {/* Probability bars — compact */}
+                    {/* Outcomes & odds */}
                     <div className="flex-shrink-0 w-48">
                       {m.outcomes.slice(0, 2).map((o, i) => {
-                        const pct = m.probabilities[i] || 0;
+                        const p = m.probabilities[i] || 0;
                         return (
-                          <div key={i} className="flex items-center gap-2 mb-0.5">
-                            <span className="text-xs text-neutral-500 w-16 truncate text-right">{o}</span>
+                          <div key={i} className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-neutral-600 w-16 truncate text-right">{o}</span>
                             <div className="flex-1 h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-neutral-500 rounded-full"
-                                style={{ width: `${Math.max(pct, 1)}%` }}
-                              />
+                              <div className="h-full bg-neutral-500 rounded-full" style={{ width: `${Math.max(p, 2)}%` }} />
                             </div>
-                            <span className="text-xs text-neutral-500 w-9 text-right tabular-nums">{pct.toFixed(0)}%</span>
+                            <span className="text-xs text-neutral-500 w-9 text-right tabular-nums">{p.toFixed(0)}%</span>
                           </div>
                         );
                       })}
                       {m.outcomes.length > 2 && (
-                        <p className="text-[11px] text-neutral-600 text-right mt-0.5">+{m.outcomes.length - 2}</p>
+                        <p className="text-xs text-neutral-700 text-right">+{m.outcomes.length - 2}</p>
                       )}
                     </div>
 
                     {/* Pool */}
                     <div className="text-right flex-shrink-0 w-20">
-                      <p className="text-xs text-neutral-500">pool</p>
-                      <p className="text-sm tabular-nums text-neutral-300">
-                        {pool > 0 ? pool.toFixed(3) : "—"}
+                      <p className="text-xs text-neutral-700">pool</p>
+                      <p className="text-sm tabular-nums text-neutral-400">
+                        {poolNum > 0 ? poolNum.toFixed(3) : "—"}
                       </p>
                     </div>
                   </div>
