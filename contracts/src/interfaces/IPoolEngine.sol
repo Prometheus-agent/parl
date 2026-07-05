@@ -31,6 +31,8 @@ interface IPoolEngine {
     event BetPlaced(bytes32 indexed marketId, address indexed bettor, uint256 outcome, uint256 amount);
     event MarketResolved(bytes32 indexed marketId, uint256 winningOutcome, uint256 totalPool);
     event ClaimProcessed(bytes32 indexed marketId, address indexed bettor, uint256 amount);
+    event MarketCanceled(bytes32 indexed marketId, uint256 totalPool);
+    event RefundProcessed(bytes32 indexed marketId, address indexed bettor, uint256 amount);
     event ProtocolFeesWithdrawn(address indexed to, uint256 amount);
 
     /* ───── Core ───── */
@@ -53,8 +55,14 @@ interface IPoolEngine {
     /// @notice Claim winnings after resolution
     function claim(bytes32 marketId) external;
 
-    /// @notice Cancel a market and refund all bets
+    /// @notice Cancel a market. Refunds are handled via refundBettor/refundAllBettors.
     function cancelMarket(bytes32 marketId) external;
+
+    /// @notice Refund a single bettor after cancellation
+    function refundBettor(bytes32 marketId, address bettor) external;
+
+    /// @notice Batch refund all bettors (owner only)
+    function refundAllBettors(bytes32 marketId) external;
 
     /// @notice Withdraw accumulated protocol fees (owner only)
     function withdrawProtocolFees(address to) external;
@@ -65,4 +73,5 @@ interface IPoolEngine {
     function getOutcomePool(bytes32 marketId, uint256 outcome) external view returns (uint256);
     function getUserBet(bytes32 marketId, address user) external view returns (uint256 outcome, uint256 amount, bool claimed);
     function calculatePayout(bytes32 marketId, address user) external view returns (uint256);
+    function getBettorCount(bytes32 marketId) external view returns (uint256);
 }

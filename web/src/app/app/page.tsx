@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useWallet } from "@/lib/wallet-context";
+import { WalletButton } from "@/lib/wallet-button";
 import CreateMarketModal from "@/lib/create-market";
 
 // ─── Types ───
@@ -72,24 +73,20 @@ export default function MarketsPage() {
     : markets;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* ─── Nav ─── */}
+    <div className="min-h-screen">
+      {/* Sticky Nav */}
+      {/* Nav */}
       <div className="border-b border-neutral-800">
-        <div className="max-w-6xl mx-auto px-5 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="font-bold text-sm tracking-wider">PARL</Link>
-            <span className="text-neutral-700">/</span>
-            <span className="text-sm text-neutral-500">markets</span>
+        <div className="max-w-6xl mx-auto px-5 min-h-12 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/" className="font-semibold text-sm tracking-wider text-white">PARL</Link>
+            <span className="text-neutral-700 text-xs">/</span>
+            <span className="text-xs text-neutral-500">markets</span>
           </div>
-          <div className="flex items-center gap-4 text-sm">
-            {address && (
-              <span className="text-neutral-600 font-mono text-xs hidden sm:inline">
-                {address.slice(0,5)}…{address.slice(-3)}
-                {chainId === 43113 && <span className="text-green-500 ml-1.5">●</span>}
-              </span>
-            )}
-            <Link href="/dashboard" className="text-neutral-600 hover:text-neutral-300 transition-colors hidden sm:inline">dashboard</Link>
-            <Link href="/docs" className="text-neutral-600 hover:text-neutral-300 transition-colors hidden sm:inline">docs</Link>
+          <div className="flex items-center gap-2 sm:gap-4 text-sm flex-wrap justify-end">
+            <Link href="/dashboard" className="text-neutral-600 hover:text-neutral-300 transition-colors hidden sm:inline shrink-0">dashboard</Link>
+            <Link href="/docs" className="text-neutral-600 hover:text-neutral-300 transition-colors hidden sm:inline shrink-0">docs</Link>
+            <WalletButton />
           </div>
         </div>
       </div>

@@ -2,27 +2,26 @@
 pragma solidity ^0.8.28;
 
 import "./interfaces/IParlOracle.sol";
+import "./interfaces/IPoolEngine.sol";
 
 /// @title ParlOracle
 /// @notice Optimistic oracle for Parl prediction markets.
 ///
-/// Flow:
-///   1. Anyone calls propose(marketId, winningOutcome, disputeWindow, data)
-///      with a bond (≥ 0.1 AVAX).
-///   2. During disputeWindow, anyone can dispute() with equal bond.
-///      If disputed → proposer loses bond to disputer, proposal voids.
-///   3. After disputeWindow without dispute → anyone can executeResolution(),
-///      which calls PoolEngine.resolveMarket() with the proposed outcome.
+/// Improvements over v1:
+///   - Re-proposal after dispute (marketId resets so market isn't stuck forever)
+///   - Dynamic bond = max(MIN_BOND, totalPool × BOND_PCT / 10000)
+///   - Safe ETH transfers via call() instead of transfer()
 contract ParlOracle is IParlOracle {
-    address public immutable poolEngine;
+    IPoolEngine public immutable poolEngine;
     uint256 public constant MIN_BOND = 0.1 ether;
     uint256 public constant MAX_DISPUTE_WINDOW = 100_000; // blocks (~14 days)
+    uint256 public constant BOND_PCT = 100; // 1% of totalPool (in basis points)
 
     mapping(bytes32 => Proposal) private _proposals;
 
     constructor(address _poolEngine) {
         require(_poolEngine != address(0), "ParlOracle: zero address");
-        poolEngine = _poolEngine;
+        poolEngine = IPoolEngine(_poolEngine);
     }
 
     /// @inheritdoc IParlOracle
@@ -30,12 +29,27 @@ contract ParlOracle is IParlOracle {
         bytes32 marketId,
         uint256 winningOutcome,
         uint256 disputeWindow,
+        uint256 totalPool,
         bytes calldata data
     ) external payable override {
-        require(msg.value >= MIN_BOND, "ParlOracle: bond too low");
         require(disputeWindow > 0, "ParlOracle: zero window");
         require(disputeWindow <= MAX_DISPUTE_WINDOW, "ParlOracle: window too large");
-        require(_proposals[marketId].proposer == address(0), "ParlOracle: already proposed");
+
+        Proposal storage p = _proposals[marketId];
+        // Allow re-proposal only if previous is resolved OR fully disputed + expired
+        if (p.proposer != address(0)) {
+            require(
+                p.resolved || (p.disputed && block.number >= p.proposedAt + p.disputeWindow + 1),
+                "ParlOracle: existing active proposal"
+            );
+        }
+
+        // Calculate required bond based on pool size
+        uint256 requiredBond = _calculateBond(totalPool);
+        require(msg.value >= requiredBond, "ParlOracle: bond too low");
+
+        // Reset for fresh proposal (clears old proposal state)
+        delete _proposals[marketId];
 
         _proposals[marketId] = Proposal({
             marketId: marketId,
@@ -66,12 +80,10 @@ contract ParlOracle is IParlOracle {
         p.disputer = msg.sender;
 
         // Slash proposer's bond to disputer
-        (bool ok, ) = payable(msg.sender).call{value: p.bond}("");
-        require(ok, "ParlOracle: slash transfer failed");
+        _safeTransfer(msg.sender, p.bond);
 
-        // Return disputer's bond (they won the dispute)
-        (bool ok2, ) = payable(msg.sender).call{value: msg.value}("");
-        require(ok2, "ParlOracle: refund failed");
+        // Return disputer's bond (they won the dispute, bond is returned)
+        _safeTransfer(msg.sender, msg.value);
 
         emit BondSlashed(marketId, p.proposer, msg.sender, p.bond);
         emit Disputed(marketId, p.proposer, msg.sender);
@@ -87,20 +99,11 @@ contract ParlOracle is IParlOracle {
 
         p.resolved = true;
 
-        // Call PoolEngine.resolveMarket via low-level call
-        (bool success, ) = poolEngine.call(
-            abi.encodeWithSignature(
-                "resolveMarket(bytes32,uint256,bytes)",
-                marketId,
-                p.winningOutcome,
-                p.data
-            )
-        );
-        require(success, "ParlOracle: resolve failed");
+        // Call PoolEngine.resolveMarket
+        poolEngine.resolveMarket(marketId, p.winningOutcome, p.data);
 
         // Return bond to proposer (acted in good faith)
-        (bool ok, ) = payable(p.proposer).call{value: p.bond}("");
-        require(ok, "ParlOracle: refund failed");
+        _safeTransfer(p.proposer, p.bond);
 
         emit Executed(marketId, p.winningOutcome);
     }
@@ -108,5 +111,22 @@ contract ParlOracle is IParlOracle {
     /// @inheritdoc IParlOracle
     function getProposal(bytes32 marketId) external view override returns (Proposal memory) {
         return _proposals[marketId];
+    }
+
+    /// @inheritdoc IParlOracle
+    function calculateBond(uint256 totalPool) external pure override returns (uint256) {
+        return _calculateBond(totalPool);
+    }
+
+    /* ───── Internal ───── */
+
+    function _calculateBond(uint256 totalPool) internal pure returns (uint256) {
+        uint256 pctBond = (totalPool * BOND_PCT) / 10000;
+        return pctBond > MIN_BOND ? pctBond : MIN_BOND;
+    }
+
+    function _safeTransfer(address to, uint256 amount) internal {
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "ParlOracle: transfer failed");
     }
 }

@@ -19,6 +19,9 @@ contract PoolEngine is IPoolEngine {
     // marketId => user => BetReceipt
     mapping(bytes32 => mapping(address => BetReceipt)) private _bets;
 
+    // marketId => bettor addresses (for refund iteration on cancellation)
+    mapping(bytes32 => address[]) private _bettors;
+
     // accumulated protocol fees (share of pool fees after claims)
     uint256 public accumulatedFees;
 
@@ -30,7 +33,7 @@ contract PoolEngine is IPoolEngine {
 
     uint256 public constant MAX_FEE_BASIS_POINTS = 500; // 5%
     uint256 public constant MIN_FEE_BASIS_POINTS = 100; // 1%
-    uint256 public constant MIN_DISPUTE_WINDOW = 100;   // ~25 min on Base
+    uint256 public constant MIN_DISPUTE_WINDOW = 100;   // ~25 min
 
     /* ───── Modifiers ───── */
 
@@ -49,7 +52,7 @@ contract PoolEngine is IPoolEngine {
 
     modifier marketExists(bytes32 marketId) {
         require(
-            _markets[marketId].status != MarketStatus(0) || 
+            _markets[marketId].status != MarketStatus(0) ||
             _markets[marketId].config.createdAt != 0,
             "PoolEngine: market does not exist"
         );
@@ -100,19 +103,21 @@ contract PoolEngine is IPoolEngine {
         require(msg.value > 0, "PoolEngine: zero bet");
         require(outcome < state.config.outcomes.length, "PoolEngine: invalid outcome");
 
+        // Track bettor for refund capability
+        if (_bets[marketId][msg.sender].amount == 0) {
+            _bettors[marketId].push(msg.sender);
+        } else {
+            require(_bets[marketId][msg.sender].outcome == outcome, "PoolEngine: already bet on different outcome");
+        }
+
         // Update pools
         state.totalPool += msg.value;
         _outcomePools[marketId][outcome] += msg.value;
 
-        // Update user bet receipt (accumulate)
+        // Update user bet receipt
         BetReceipt storage receipt = _bets[marketId][msg.sender];
-        if (receipt.amount == 0) {
-            receipt.outcome = outcome;
-            receipt.amount = msg.value;
-        } else {
-            require(receipt.outcome == outcome, "PoolEngine: already bet on different outcome");
-            receipt.amount += msg.value;
-        }
+        receipt.outcome = outcome;
+        receipt.amount += msg.value;
 
         emit BetPlaced(marketId, msg.sender, outcome, msg.value);
     }
@@ -121,7 +126,7 @@ contract PoolEngine is IPoolEngine {
     function resolveMarket(
         bytes32 marketId,
         uint256 winningOutcome,
-        bytes calldata /* proof */
+        bytes calldata
     ) external marketExists(marketId) onlyResolver(marketId) {
         MarketState storage state = _markets[marketId];
         require(state.status == MarketStatus.Active, "PoolEngine: market not active");
@@ -155,7 +160,7 @@ contract PoolEngine is IPoolEngine {
 
         if (payout > 0) {
             receipt.claimed = true;
-            payable(msg.sender).transfer(payout);
+            _safeTransfer(msg.sender, payout);
             emit ClaimProcessed(marketId, msg.sender, payout);
         } else {
             revert("PoolEngine: no payout");
@@ -169,9 +174,51 @@ contract PoolEngine is IPoolEngine {
 
         state.status = MarketStatus.Canceled;
 
-        // Refund logic would iterate over bettors — for MVP, requiring off-chain coordination.
-        // In production, a Merkle-tree-based refund mechanism is preferred.
-        emit MarketResolved(marketId, type(uint256).max, state.totalPool);
+        emit MarketCanceled(marketId, state.totalPool);
+    }
+
+    /// @notice Refund a single bettor when a market is cancelled.
+    ///         Anyone can trigger this — bettors don't need to call it themselves.
+    function refundBettor(bytes32 marketId, address bettor) external marketExists(marketId) {
+        MarketState storage state = _markets[marketId];
+        require(state.status == MarketStatus.Canceled, "PoolEngine: market not canceled");
+
+        BetReceipt storage receipt = _bets[marketId][bettor];
+        require(receipt.amount > 0, "PoolEngine: no bet to refund");
+        require(!receipt.claimed, "PoolEngine: already refunded");
+
+        uint256 amount = receipt.amount;
+        receipt.amount = 0;
+        receipt.claimed = true;
+
+        // Deduct from totalPool so double-spend isn't possible
+        state.totalPool -= amount;
+
+        _safeTransfer(bettor, amount);
+
+        emit RefundProcessed(marketId, bettor, amount);
+    }
+
+    /// @notice Batch refund — owner can refund all bettors in one tx
+    function refundAllBettors(bytes32 marketId) external marketExists(marketId) onlyOwner {
+        MarketState storage state = _markets[marketId];
+        require(state.status == MarketStatus.Canceled, "PoolEngine: market not canceled");
+
+        address[] storage bettors = _bettors[marketId];
+        uint256 count = bettors.length;
+
+        for (uint256 i = 0; i < count; i++) {
+            address bettor = bettors[i];
+            BetReceipt storage receipt = _bets[marketId][bettor];
+            if (receipt.amount > 0 && !receipt.claimed) {
+                uint256 amount = receipt.amount;
+                receipt.amount = 0;
+                receipt.claimed = true;
+                state.totalPool -= amount;
+                _safeTransfer(bettor, amount);
+                emit RefundProcessed(marketId, bettor, amount);
+            }
+        }
     }
 
     /// @inheritdoc IPoolEngine
@@ -179,7 +226,7 @@ contract PoolEngine is IPoolEngine {
         uint256 amount = accumulatedFees;
         require(amount > 0, "PoolEngine: no fees");
         accumulatedFees = 0;
-        payable(to).transfer(amount);
+        _safeTransfer(to, amount);
         emit ProtocolFeesWithdrawn(to, amount);
     }
 
@@ -218,5 +265,18 @@ contract PoolEngine is IPoolEngine {
         uint256 netPool = state.totalPool - fee;
         uint256 winningPool = _outcomePools[marketId][state.winningOutcome];
         return (receipt.amount * netPool) / winningPool;
+    }
+
+    /// @notice Get number of bettors in a market
+    function getBettorCount(bytes32 marketId) external view returns (uint256) {
+        return _bettors[marketId].length;
+    }
+
+    /* ───── Internal ───── */
+
+    /// @dev Safe ETH transfer using call() — compatible with smart contract wallets
+    function _safeTransfer(address to, uint256 amount) internal {
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "PoolEngine: transfer failed");
     }
 }

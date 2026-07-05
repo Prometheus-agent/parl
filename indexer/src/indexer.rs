@@ -8,6 +8,7 @@ use sqlx::PgPool;
 use std::sync::Arc;
 
 use crate::config::Config;
+use parl_shared::category::detect_category;
 
 abigen!(
     PoolEngine,
@@ -184,54 +185,6 @@ fn h160_to_fixed(h: &H160) -> Vec<u8> {
 }
 
 /* ───── Event Handlers ───── */
-
-/// Auto-detect category from outcomes
-fn detect_category(outcomes: &[String]) -> &'static str {
-    let text: String = outcomes.join(" ").to_lowercase();
-
-    // Politics (check before sports to avoid "election" matching "win")
-    if ["president", "election", "vote", "senate", "congress", "democrat", "republican",
-         "governor", "mayor", "prime minister", "party"]
-        .iter().any(|k| text.contains(k))
-    {
-        return "politics";
-    }
-
-    // Crypto
-    if ["btc", "bitcoin", "eth", "ethereum", "sol", "solana", "crypto", "token", "price",
-         "defi", "nft", "tvl", "market cap", "airdrop", "halving", "etf"]
-        .iter().any(|k| text.contains(k))
-    {
-        return "crypto";
-    }
-
-    // Weather / Climate
-    if ["temperature", "weather", "climate", "hurricane", "celsius", "fahrenheit", "degrees",
-         "storm", "rain", "snow"]
-        .iter().any(|k| text.contains(k))
-    {
-        return "weather";
-    }
-
-    // Tech / AI
-    if ["gpt", "ai", "artificial intelligence", "openai", "google", "apple", "microsoft",
-         "amazon", "tesla", "spacex", "launch", "rocket", "satellite"]
-        .iter().any(|k| text.contains(k))
-    {
-        return "technology";
-    }
-
-    // Sports (check last)
-    if ["win", "lose", "draw", "team", "match", "tournament", "champion", "goal", "score", "nfl",
-         "nba", "nhl", "mlb", "ufc", "soccer", "football", "basketball", "tennis", "f1", "gp"]
-        .iter().any(|k| text.contains(k))
-    {
-        return "sports";
-    }
-
-    // General
-    "general"
-}
 
 async fn handle_market_created(
     pool: &PgPool,

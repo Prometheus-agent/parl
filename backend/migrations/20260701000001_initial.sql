@@ -8,7 +8,6 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TYPE market_status AS ENUM (
     'active',
-    'resolving',
     'resolved',
     'canceled'
 );
@@ -21,18 +20,20 @@ CREATE TABLE markets (
     outcomes        TEXT[] NOT NULL,
     fee_basis_points INTEGER NOT NULL CHECK (fee_basis_points BETWEEN 100 AND 500),
     status          market_status NOT NULL DEFAULT 'active',
-    total_pool      NUMERIC(78, 0) NOT NULL DEFAULT 0,
+    total_pool      NUMERIC NOT NULL DEFAULT 0,
     winning_outcome INTEGER,
     dispute_window  INTEGER NOT NULL DEFAULT 100,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     resolved_at     TIMESTAMPTZ,
-    tx_hash         BYTEA,                           -- creation tx
+    tx_hash         BYTEA,
     block_number    BIGINT,
-    chain_id        BIGINT NOT NULL DEFAULT 84532    -- Base Sepolia
+    chain_id        BIGINT NOT NULL DEFAULT 43113, -- Avalanche Fuji
+    category        TEXT
 );
 
 CREATE INDEX idx_markets_status ON markets(status);
 CREATE INDEX idx_markets_created_at ON markets(created_at DESC);
+CREATE INDEX idx_markets_category ON markets(category);
 
 /* ───── Bets ───── */
 
@@ -41,7 +42,7 @@ CREATE TABLE bets (
     market_id       UUID NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
     bettor          BYTEA NOT NULL,                  -- address (20 bytes)
     outcome         INTEGER NOT NULL,
-    amount          NUMERIC(78, 0) NOT NULL,
+    amount          NUMERIC NOT NULL,
     claimed         BOOLEAN NOT NULL DEFAULT false,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     tx_hash         BYTEA,
@@ -59,20 +60,9 @@ CREATE TABLE claims (
     bet_id          UUID NOT NULL REFERENCES bets(id) ON DELETE CASCADE,
     market_id       UUID NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
     bettor          BYTEA NOT NULL,
-    payout          NUMERIC(78, 0) NOT NULL,
+    payout          NUMERIC NOT NULL,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     tx_hash         BYTEA
 );
 
 CREATE INDEX idx_claims_bettor ON claims(bettor);
-
-/* ───── Fee Ledger ───── */
-
-CREATE TABLE fee_ledger (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    market_id       UUID NOT NULL REFERENCES markets(id) ON DELETE CASCADE,
-    amount          NUMERIC(78, 0) NOT NULL,
-    claimed         BOOLEAN NOT NULL DEFAULT false,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    tx_hash         BYTEA
-);
